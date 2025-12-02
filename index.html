@@ -1,1 +1,273 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GameScout</title>
+    <link rel="stylesheet" href="https://mn97io.github.io/GameScoutCSS/style.css" />
+</head>
+<body>
 
+<!-- 헤더  -->
+<header>
+    <h1>[ GameScout ]</h1>
+    <p class="subtitle">2001111 이보성</p>
+</header>
+
+<!-- 네비게이션 -->
+<nav class="tabs">
+    <button class="tab-btn active" onclick="switchTab('deals')">■ 핫딜목록</button>
+    <button class="tab-btn" onclick="switchTab('search')">■ 게임검색</button>
+    <button class="tab-btn" onclick="switchTab('giveaways')">■ 무료배포</button>
+</nav>
+
+<!-- 1. 핫딜 섹션 -->
+<section id="deals" class="content-section active">
+    <div id="deals-list" class="list-container">
+        <!-- 리스트 아이템들이 여기에 추가됨 -->
+    </div>
+    <div class="load-more-container">
+        <button id="deals-more-btn" class="load-more-btn" onclick="loadMoreDeals()">▼ 더 보기 (Next Page)</button>
+    </div>
+</section>
+
+<!-- 2. 검색 섹션 -->
+<section id="search" class="content-section">
+    <div class="search-box">
+        검색어: 
+        <input type="text" id="search-input" class="search-input" onkeypress="handleEnter(event)">
+        <button class="search-btn" onclick="searchGames()">검색</button>
+    </div>
+    <div id="search-list" class="list-container"></div>
+    <div id="search-msg" class="loading" style="display:none;">결과 없음</div>
+</section>
+
+<!-- 3. 무료 배포 섹션 -->
+<section id="giveaways" class="content-section">
+    <div id="giveaways-list" class="list-container"></div>
+    <div class="load-more-container">
+        <button id="giveaways-more-btn" class="load-more-btn" onclick="loadMoreGiveaways()">▼ 더 보기</button>
+    </div>
+</section>
+
+<!-- 푸터 -->
+<footer className="footer">
+    <div className="footer">
+        <p>© 2025 GameScout Web Service.</p>
+        <p>웹 서비스 개발 기획 프로젝트 - 2001111 이보성</p>
+        <p>Powered by CheapShark & GamerPower OpenAPI</p>
+    </div>
+</footer>
+
+<script>
+    // --- 설정 및 상태 ---
+    const API = {
+        CHEAPSHARK: "https://www.cheapshark.com/api/1.0",
+        GAMERPOWER: "https://www.gamerpower.com/api",
+        PROXY: "https://corsproxy.io/?"
+    };
+
+    const state = {
+        dealsPage: 0,
+        giveaways: [], 
+        giveawaysLoaded: 0,
+        stores: {} 
+    };
+
+    // --- 초기화 ---
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchStores(); // 스토어 정보 먼저 가져오기
+        fetchDeals(); 
+    });
+
+    // --- 스토어 정보 가져오기 ---
+    async function fetchStores() {
+        try {
+            const res = await fetch(`${API.CHEAPSHARK}/stores`);
+            const data = await res.json();
+            data.forEach(store => {
+                state.stores[store.storeID] = store.storeName;
+            });
+        } catch (err) {
+            console.error("스토어 정보 로드 실패:", err);
+            // 실패 시 기본값 설정 (필요하면)
+        }
+    }
+
+    // --- 탭 전환 ---
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+        document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+
+        if (tabId === 'giveaways' && state.giveaways.length === 0) {
+            fetchGiveaways();
+        }
+    }
+
+    // --- 1. 핫딜 기능 ---
+    async function fetchDeals() {
+        const container = document.getElementById('deals-list');
+        const btn = document.getElementById('deals-more-btn');
+        
+        if(state.dealsPage === 0) container.innerHTML = '<div class="loading">데이터 로딩중...</div>';
+        btn.textContent = "로딩중...";
+
+        try {
+            // Steam(storeID=1) 핫딜 가져오기
+            const res = await fetch(`${API.CHEAPSHARK}/deals?&storeID=1&upperPrice=50&sortBy=DealRating&pageNumber=${state.dealsPage}`);
+            const data = await res.json();
+
+            if(state.dealsPage === 0) container.innerHTML = ''; 
+
+            if (data.length === 0) {
+                btn.style.display = 'none';
+                return;
+            }
+
+            renderList(data, container, 'deal');
+            state.dealsPage++;
+            btn.textContent = "▼ 더 보기 (Next Page)";
+        } catch (err) {
+            container.innerHTML = `<div class="error">오류 발생: ${err.message}</div>`;
+        }
+    }
+
+    function loadMoreDeals() { fetchDeals(); }
+
+    // --- 2. 검색 기능 ---
+    function handleEnter(e) { if(e.key === 'Enter') searchGames(); }
+
+    async function searchGames() {
+        const input = document.getElementById('search-input');
+        const term = input.value.trim();
+        const container = document.getElementById('search-list');
+        const msg = document.getElementById('search-msg');
+
+        if (!term) return alert('검색어를 입력하세요.');
+
+        container.innerHTML = '<div class="loading">검색중...</div>';
+        msg.style.display = 'none';
+
+        try {
+            // 검색 시에는 모든 스토어 정보를 포함한 deal 정보 조회
+            const res = await fetch(`${API.CHEAPSHARK}/deals?title=${encodeURIComponent(term)}&sortBy=DealRating&exact=0`);
+            const data = await res.json();
+
+            container.innerHTML = '';
+            
+            if (data.length === 0) {
+                msg.textContent = "결과가 없습니다.";
+                msg.style.display = 'block';
+                return;
+            }
+
+            renderList(data, container, 'deal');
+        } catch (err) {
+            container.innerHTML = `<div class="error">검색 오류: ${err.message}</div>`;
+        }
+    }
+
+    // --- 3. 무료 배포 기능 ---
+    async function fetchGiveaways() {
+        const container = document.getElementById('giveaways-list');
+        container.innerHTML = '<div class="loading">무료 정보 가져오는 중...</div>';
+
+        try {
+            const url = API.PROXY + encodeURIComponent(`${API.GAMERPOWER}/giveaways?type=game&sort-by=date`);
+            const res = await fetch(url);
+            
+            if (!res.ok) throw new Error("API 호출 실패");
+            
+            const data = await res.json();
+            state.giveaways = data;
+            
+            container.innerHTML = '';
+            loadMoreGiveaways();
+        } catch (err) {
+            console.error(err);
+            // 에러 시 더미 데이터
+            state.giveaways = [{
+                title: "API 연결 실패",
+                description: "CORS 정책 문제로 데이터를 가져올 수 없습니다.",
+                image: "https://via.placeholder.com/100x60?text=Error",
+                open_giveaway_url: "#",
+                platforms: "System",
+                end_date: "N/A"
+            }];
+            container.innerHTML = '';
+            renderList(state.giveaways, container, 'giveaway');
+            document.getElementById('giveaways-more-btn').style.display = 'none';
+        }
+    }
+
+    function loadMoreGiveaways() {
+        const container = document.getElementById('giveaways-list');
+        const nextBatch = state.giveaways.slice(state.giveawaysLoaded, state.giveawaysLoaded + 20);
+        
+        if (nextBatch.length > 0) {
+            renderList(nextBatch, container, 'giveaway');
+            state.giveawaysLoaded += nextBatch.length;
+        }
+
+        if (state.giveawaysLoaded >= state.giveaways.length) {
+            document.getElementById('giveaways-more-btn').style.display = 'none';
+        }
+    }
+
+    // --- 렌더링 함수 ---
+    function renderList(items, container, type) {
+        const fragment = document.createDocumentFragment();
+
+        items.forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'list-item';
+
+            if (type === 'deal') {
+                const savings = parseFloat(item.savings).toFixed(0);
+                const isOnSale = savings > 0;
+                // 스토어 이름 매핑 (없으면 Unknown 표시)
+                const storeName = state.stores[item.storeID] || '기타 스토어';
+                
+                row.innerHTML = `
+                    <img src="${item.thumb}" class="item-img" alt="img" onerror="this.src='https://via.placeholder.com/100x60?text=NoImg'">
+                    <div class="item-info">
+                        <span class="item-title">${item.title}</span>
+                        <div class="item-details">
+                            [평가: ${item.steamRatingPercent > 0 ? item.steamRatingPercent + '%' : '정보없음'}] | 
+                            [스토어: ${storeName}]
+                        </div>
+                        <div class="price-info">
+                            ${isOnSale ? `<span class="discount-rate">[${savings}% 할인]</span>` : ''}
+                            ${isOnSale ? `<span class="old-price">$${item.normalPrice}</span>` : ''}
+                            → <span class="final-price">$${item.salePrice}</span>
+                        </div>
+                        <a href="https://www.cheapshark.com/redirect?dealID=${item.dealID}" target="_blank" class="buy-link">▶ 스토어 바로가기</a>
+                    </div>
+                `;
+            } else if (type === 'giveaway') {
+                row.innerHTML = `
+                    <img src="${item.image}" class="item-img" alt="img" onerror="this.src='https://via.placeholder.com/100x60?text=NoImg'">
+                    <div class="item-info">
+                        <span class="item-title">${item.title}</span>
+                        <div class="item-details">
+                            [플랫폼: ${item.platforms}] | [종료일: ${item.end_date}]
+                        </div>
+                        <div class="price-info">
+                            <span class="final-price" style="color:green;">[무료 배포 중]</span>
+                        </div>
+                        <div style="font-size:12px; color:#555; margin-bottom:5px;">${item.description.substring(0, 50)}...</div>
+                        <a href="${item.open_giveaway_url}" target="_blank" class="buy-link">▶ 무료로 받기</a>
+                    </div>
+                `;
+            }
+            fragment.appendChild(row);
+        });
+
+        container.appendChild(fragment);
+    }
+</script>
+
+</body>
+</html>
