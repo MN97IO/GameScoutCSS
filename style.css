@@ -1,0 +1,156 @@
+/* --- 바디 --- */
+body {
+    font-family: "Gulim", "굴림", "Batang", serif; 
+    background-color: white;
+    color: black;
+    margin: 10px;
+}
+
+/* 헤더 */
+header {
+    border: 2px solid black;
+    padding: 10px;
+    margin-bottom: 20px;
+    background-color: #f0f0f0;
+    text-align: center;
+}
+h1 { margin: 0; font-size: 20px; }
+.subtitle { font-size: 12px; color: #555; }
+
+/* 네비게이션 */
+.tabs {
+    margin-bottom: 20px;
+    padding: 5px;
+    border-bottom: 2px solid black;
+    text-align: center;
+}
+.tab-btn {
+    background-color: #e0e0e0;
+    border: 2px outset #f0f0f0;
+    color: black;
+    padding: 5px 15px;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: "Gulim", "굴림";
+    margin: 0 2px;
+}
+.tab-btn:active { border-style: inset; }
+.tab-btn.active {
+    background-color: black;
+    color: white;
+    border: 2px inset black;
+    font-weight: bold;
+}
+
+/* 컨텐츠 영역 */
+.content-section { display: none; }
+.content-section.active { display: block; }
+
+/* --- 리스트 스타일 --- */
+.list-container {
+    border-top: 2px solid black;
+}
+
+.list-item {
+    display: flex; /* 좌우 배치 */
+    border-bottom: 1px solid black;
+    padding: 10px;
+    align-items: center;
+    gap: 15px;
+}
+
+/* 모바일 대응: 화면 작으면 위아래로 배치 */
+@media (max-width: 600px) {
+    .list-item { flex-direction: column; align-items: flex-start; text-align: left; }
+    .item-img { width: 100px; height: auto; }
+}
+
+.item-img {
+    width: 120px;
+    height: 60px;
+    object-fit: cover;
+    border: 1px solid black;
+    background: #ccc;
+    flex-shrink: 0;
+}
+
+.item-info {
+    flex-grow: 1;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.item-title {
+    font-size: 16px;
+    font-weight: bold;
+    display: block;
+    margin-bottom: 4px;
+    text-decoration: underline; /* 제목 강조 */
+}
+
+.item-details {
+    font-size: 13px;
+}
+
+/* 가격 정보 */
+.price-info {
+    font-weight: bold;
+}
+.old-price { text-decoration: line-through; color: #888; font-weight: normal; }
+.discount-rate { color: red; font-weight: bold; }
+.final-price { color: blue; }
+
+/* 버튼 링크 */
+.buy-link {
+    display: inline-block;
+    border: 1px solid black;
+    background-color: #ddd;
+    color: black;
+    text-decoration: none;
+    padding: 2px 8px;
+    font-size: 12px;
+    margin-top: 5px;
+}
+.buy-link:hover { background-color: #bbb; }
+
+/* 검색창 */
+.search-box {
+    margin: 20px 0;
+    padding: 10px;
+    border: 1px solid black;
+    background: #eee;
+}
+.search-input {
+    width: 60%;
+    padding: 5px;
+    font-family: "Gulim";
+}
+.search-btn {
+    padding: 5px 10px;
+    border: 1px solid black;
+    background: #ccc;
+    cursor: pointer;
+    font-family: "Gulim";
+}
+
+/* 더보기 버튼 */
+.load-more-container {
+    text-align: center;
+    margin-top: 20px;
+    padding: 10px;
+    border-top: 2px double black;
+}
+.load-more-btn {
+    width: 100%;
+    padding: 10px;
+    background: #f8f8f8;
+    border: 1px solid black;
+    cursor: pointer;
+    font-weight: bold;
+    font-family: "Gulim";
+}
+.load-more-btn:hover { background: #e8e8e8; }
+
+/* 로딩/에러 */
+.loading { padding: 20px; text-align: center; }
+.error { color: red; font-weight: bold; }
